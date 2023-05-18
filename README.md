@@ -1,1 +1,2 @@
-This is the code for 'Improved Learning of Subsplit Bayesian Networks with Stochastic Optimization and Variance Reduction'.
+# Improved Learning of Subsplit Bayesian Networks with Stochastic Optimization and Variance Reduction
+This is the codebase for 'Improved Learning of Subsplit Bayesian Networks with Stochastic Optimization and Variance Reduction'.
