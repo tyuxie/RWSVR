@@ -494,6 +494,50 @@ class SBN(nn.Module):
         return logp, kldivs
 
 
+    def GA_learn(self, stepsz, tree_dict, tree_names, tree_wts, maxiter=500, miniter=50, abstol=1e-05, start_from_uniform=False, monitor=True, report_kl=False):
+        self.set_clade_to_bitarr(tree_dict, tree_names)
+        if start_from_uniform:
+            self.CPD_params = nn.Parameter(torch.zeros(self.CPDParser.num_params), requires_grad=True)
+        else:
+            self.CPDs_train_prob(tree_dict, tree_names, tree_wts)
+            self.CPDs_normalize()
+            self.CPD_params = nn.Parameter(torch.log(self.CPDs.clamp(EPS)), requires_grad=True)
+        self.update_CPDs()
+        logp, kldivs = [], []
+        assert isinstance(stepsz, float)
+        optimizer = torch.optim.Adam(params = self.parameters(), lr = stepsz)
+
+        if monitor:
+            t = time.time()
+
+        for k in range(maxiter):
+            curr_logp = 0.0
+            for i, tree_name in enumerate(tree_names):
+                tree = tree_dict[tree_name]
+                wts = tree_wts[i]
+                tree_cp = deepcopy(tree)
+                log_est_prob = self.tree_prob(tree_cp)
+                del tree_cp
+                curr_logp += wts * log_est_prob
+            loss = - curr_logp
+            logp.append(curr_logp.item())
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            self.update_CPDs()
+
+            if monitor:
+                if report_kl:
+                    kldivs.append(self.kl_div())
+                    print('{} Iter {} ({:.02f} seconds): current log likelihood {:.06f} | KL div {:.06f}'.format(time.asctime(time.localtime(time.time())), k + 1, time.time()-t, curr_logp, kldivs[-1]))
+                else:
+                    print('{} Iter {} ({:.02f} seconds): current log likelihood {:.06f}'.format(time.asctime(time.localtime(time.time())), k + 1, time.time()-t, curr_logp))
+                t = time.time()
+                
+            if k > miniter and abs(logp[-1] - logp[-2]) < abstol:
+                break
+        return logp, kldivs
+    
     def grab_subsplit_idxes(self, tree):
             subsplit_idxes_inorder = []
             root_idxes_inorder = [] ##root at this node

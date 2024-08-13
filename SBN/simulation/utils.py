@@ -78,21 +78,20 @@ def mcmc_treeprob(filename, data_type, truncate=None):
 
     return mcmc_samp_tree_dict, mcmc_samp_tree_name, mcmc_samp_tree_wts
 
-## 只有树的root有三个children时, 它作为无根树才是well-defined. 因为只有这样, 随意把virtual root放在一个边上才产生一个有根树, 也只有这样才有2n-3个边（注意有根树有2n-2个边）
 
 def summary(dataset, file_path):
-    tree_dict_total = {}  ##str树名: 树
-    tree_dict_map_total = defaultdict(float) ##拓扑id: weight (相同拓扑结构的树需要加总weight)
-    tree_names_total = [] ##str树名列表
-    tree_wts_total = []  ##树的weight.
-    n_samp_tree = 0  ##树的数量
+    tree_dict_total = {}
+    tree_dict_map_total = defaultdict(float)
+    tree_names_total = []
+    tree_wts_total = [] 
+    n_samp_tree = 0 
     for i in range(1, 11):
         tree_dict_rep, tree_name_rep, tree_wts_rep = mcmc_treeprob(file_path + dataset + '/rep_{}/'.format(i) + dataset + '.trprobs', 'nexus')
         tree_wts_rep = np.round(np.array(tree_wts_rep) * 750001)
 
         for i, name in enumerate(tree_name_rep):
             tree_id = tree_dict_rep[name].get_topology_id()
-            if tree_id not in tree_dict_map_total:  ##n_samp_tree记录了不同的拓扑结构的数量.
+            if tree_id not in tree_dict_map_total: 
                 n_samp_tree += 1
                 tree_names_total.append('tree_{}'.format(n_samp_tree))
                 tree_dict_total[tree_names_total[-1]] = tree_dict_rep[name]
@@ -125,7 +124,7 @@ def get_support_from_mcmc(taxa, tree_dict_total, tree_names_total, tree_wts_tota
                 if not node.is_leaf():
                     child_subsplit = min([nodetobitMap[child] for child in node.children]).to01()
                     for sister in node.get_sisters():
-                        parent_subsplit = (nodetobitMap[sister] + nodetobitMap[node]).to01()  ##parent_subsplit长度是2*ntaxa (被分割的节点放在后面), child_subsplit长度是ntaxa.
+                        parent_subsplit = (nodetobitMap[sister] + nodetobitMap[node]).to01()
                         if parent_subsplit not in subsplit_supp_dict:
                             subsplit_supp_dict[parent_subsplit] = OrderedDict()
                         if child_subsplit not in subsplit_supp_dict[parent_subsplit]:

@@ -7,7 +7,6 @@ import dill
 import argparse
 import os
 
-# A Python 2 environment is needed.
 
 def get_args():
     '''Add argument by command line'''

@@ -1,2 +1,2 @@
-# Improved Learning of Subsplit Bayesian Networks with Stochastic Optimization and Variance Reduction
-This is the codebase for 'Improved Learning of Subsplit Bayesian Networks with Stochastic Optimization and Variance Reduction'.
+# Improving Tree Probability Estimation with Stochastic Optimization and Variance Reduction
+This is the codebase for 'Improving Tree Probability Estimation with Stochastic Optimization and Variance Reduction'.

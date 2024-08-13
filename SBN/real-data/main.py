@@ -97,6 +97,17 @@ def run_sga(args, stat):
         print('{} SGA lr:{}, biter:{}, batch:{} finished.'.format(time.asctime(time.localtime(time.time())), args.lr, args.biter, args.batch))
     torch.save(model.CPDs, args.ckptpath)
 
+def run_ga(args, stat):
+    model = SBN(args.taxa, args.rootsplit_supp_dict, args.subsplit_supp_dict, args.emp_tree_freq)
+    logp, kldiv = model.GA_learn(args.lr, args.tree_dict, args.tree_names, args.tree_wts, maxiter=args.maxiter,miniter=args.miniter, abstol=args.abstol,report_kl=args.report_kl, monitor=args.monitor)
+    stat['logp'] = logp
+    if args.report_kl:
+        stat['kldiv'] = kldiv
+        print('{} GA lr:{}, biter:{}, batch:{} finished. achieves the KL divergence: {}.'.format(time.asctime(time.localtime(time.time())), args.lr, args.biter, args.batch, kldiv[-1]), flush=True)
+    else:
+        print('{} GA lr:{}, biter:{}, batch:{} finished.'.format(time.asctime(time.localtime(time.time())), args.lr, args.biter, args.batch), flush=True)
+    torch.save(model.CPDs, args.ckptpath)
+
 def add_arguments():
 
     parser = argparse.ArgumentParser(description='The arguments for SBN')
@@ -108,7 +119,7 @@ def add_arguments():
     parser.add_argument('--ema_rate', type=float, default=0.99, help='The ema_rate for exponential moving average for SEMVR, SEM')
     parser.add_argument('--lr', type=float, default=1e-3, help='The learning rate for SVRG, SGA')
     parser.add_argument('--abstol', type=float, default=1e-5, help='stopping criteria')
-    parser.add_argument('--maxiter', type=int, default=500, help='the maximum epoch')
+    parser.add_argument('--maxiter', type=int, default=300, help='the maximum epoch')
     parser.add_argument('--miniter',type=int, default=50, help='the minimum epoch')
     parser.add_argument('--monitor', default=False, action='store_true')
     parser.add_argument('--report_kl', default=False, action='store_true')
@@ -124,25 +135,25 @@ def main():
     args.statpath = args.result_folder + '/{}_{}.pkl'.format(args.method, date)
     args.ckptpath = args.result_folder + '/{}_{}.pt'.format(args.method, date)
 
-    print('Training with parameters {}'.format(args))
+    print('Training with parameters {}'.format(args), flush=True)
     if args.report_kl:
-        print('{} dataset DS{}, golden run loading ...'.format(time.asctime(time.localtime(time.time())), args.dataset))
+        print('{} dataset DS{}, golden run loading ...'.format(time.asctime(time.localtime(time.time())), args.dataset), flush=True)
         tree_dict_total, tree_names_total, tree_wts_total = summary('DS{}'.format(args.dataset), '../../data/raw_data_DS1-4/')
         args.emp_tree_freq = {tree_dict_total[tree_name]:tree_wts_total[i] for i, tree_name in enumerate(tree_names_total)}
     else:
         args.emp_tree_freq = None
     
-    print("{} loading DS{} rep {} ...".format(time.asctime(time.localtime(time.time())), args.dataset, args.repo))
+    print("{} loading DS{} rep {} ...".format(time.asctime(time.localtime(time.time())), args.dataset, args.repo), flush=True)
     args.tree_dict, args.tree_names, args.tree_wts = mcmc_treeprob('../../data/short_run_data_DS1-4/DS' + str(args.dataset) + '/rep_{}/DS'.format(args.repo) + str(args.dataset) + '.trprobs', 'nexus')
     args.tree_wts = np.array(args.tree_wts)/sum(args.tree_wts) 
     args.taxa = args.tree_dict[args.tree_names[0]].get_leaf_names()
     args.rootsplit_supp_dict, args.subsplit_supp_dict = get_support_from_mcmc(args.taxa, args.tree_dict, args.tree_names)
 
-    print("{} DS{} rep {}: {} unique trees".format(time.asctime(time.localtime(time.time())), args.dataset, args.repo, len(args.tree_wts)))
+    print("{} DS{} rep {}: {} unique trees".format(time.asctime(time.localtime(time.time())), args.dataset, args.repo, len(args.tree_wts)), flush=True)
 
     stat = dict()
 
-    method_dict = {'SGA': run_sga, 'SEM': run_sem, 'SVRG': run_svrg, 'EM': run_em, 'SEMVR': run_semvr}
+    method_dict = {'SGA': run_sga, 'SEM': run_sem, 'SVRG': run_svrg, 'EM': run_em, 'SEMVR': run_semvr, 'GA': run_ga}
     method_dict[args.method](args, stat)
     
     with open(args.statpath, 'wb') as f:
