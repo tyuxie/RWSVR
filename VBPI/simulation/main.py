@@ -19,12 +19,15 @@ def get_args():
 
 def main():
     args = get_args()
+
+    path = f'results/{args.method}-{args.nparticles}'
+    os.makedirs(path, exist_ok=True)
     
     # load empirical data
-    with open('../../data/simulation/simulation_emp_tree_freq.dill') as readin:
-        emp_tree_freq = dill.load(readin)
+    with open('../../data/simulation/simulation_emp_tree_freq.dill', 'rb') as readin:
+        emp_tree_freq = dill.load(readin, encoding='iso-8859-1')
     
-    tree_dict, tree_wts = zip(*emp_tree_freq.iteritems())
+    tree_dict, tree_wts = zip(*emp_tree_freq.items())
     tree_dict = {'tree_'+str(i): tree for i, tree in enumerate(tree_dict)}
     tree_names = ['tree_'+str(i) for i in range(len(tree_wts))]
 
@@ -36,11 +39,15 @@ def main():
 
     # run!
     if args.method == 'vimco':
-        sbn.vimco(0.001, n_particles=args.nparticles, sgd_solver='adam')
+        test_kl_div, test_lower_bound = sbn.vimco(0.001, n_particles=args.nparticles, sgd_solver='adam')
     elif args.method == 'rws':
-        sbn.rws(0.002, n_particles=args.nparticles, sgd_solver='amsgrad', sample_particle=False)
+        test_kl_div, test_lower_bound = sbn.rws(0.002, n_particles=args.nparticles, sgd_solver='amsgrad', sample_particle=False)
     elif args.method == 'rwsvr':
-        sbn.rwsvr(0.002, n_particles=args.nparticles, sgd_solver='amsgrad', sample_particle=False)
+        test_kl_div, test_lower_bound = sbn.rwsvr(0.002, n_particles=args.nparticles, sgd_solver='amsgrad', sample_particle=False)
+    
+    np.save(os.path.join(path, 'kl_div.npy'), test_kl_div)
+    np.save(os.path.join(path, 'lower_bound.npy'), test_lower_bound)
+    
         
 if __name__ == '__main__':
     main()

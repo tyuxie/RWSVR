@@ -2,15 +2,9 @@ import numpy as np
 from bitarray import bitarray
 from ete3 import Tree
 from collections import defaultdict
-import phyloinfer as pinf
 from optimizers import SGD_Server
 from utils import softmax, softmax_parser, dict_sum, upper_clip, logmeanexp, BitArray, ParamParser
-import distributions
 import time
-from copy import deepcopy
-from joblib import Parallel, delayed
-import multiprocessing
-import pdb
 
 
 class SBN(object):
@@ -205,8 +199,8 @@ class SBN(object):
                 else:
                     bipart_bitarr_prob[parent_bipart_bitarr.to01()] += np.log(self.get_CPDs(item_name))
                 
-        bipart_bitarr_prob_real = {key: value if zero_bubble[key]==0 else -np.inf for key, value in bipart_bitarr_prob.iteritems()}
-        bipart_bitarr_prob_mask = {key: value if zero_bubble[key]<2 else -np.inf for key, value in bipart_bitarr_prob.iteritems()}
+        bipart_bitarr_prob_real = {key: value if zero_bubble[key]==0 else -np.inf for key, value in bipart_bitarr_prob.items()}
+        bipart_bitarr_prob_mask = {key: value if zero_bubble[key]<2 else -np.inf for key, value in bipart_bitarr_prob.items()}
         return bipart_bitarr_prob_real, bipart_bitarr_prob_mask, bipart_bitarr_node, zero_bubble
         
     
@@ -218,7 +212,7 @@ class SBN(object):
         root_prob = {}
         cum_root_prob = defaultdict(float)
         if max_bipart_bitarr_prob is None:
-            max_bipart_bitarr_prob = np.max(bipart_bitarr_prob.values())
+            max_bipart_bitarr_prob = np.max(list(bipart_bitarr_prob.values()))
         for node in tree.traverse('postorder'):
             if not node.is_root():
                 bipart_bitarr = bipart_bitarr_node[node]
@@ -249,13 +243,13 @@ class SBN(object):
             nodetobitMap = self.node2bitMap(tree, bit_type='clade')
         
         bipart_bitarr_prob_real, bipart_bitarr_prob, bipart_bitarr_node, zero_bubble = self.rooted_tree_probs(tree, nodetobitMap)
-        bipart_bitarr_prob_real_vec = np.array(bipart_bitarr_prob_real.values())
+        bipart_bitarr_prob_real_vec = np.array(list(bipart_bitarr_prob_real.values()))
         max_bipart_bitarr_prob_real = np.max(bipart_bitarr_prob_real_vec)
         if max_bipart_bitarr_prob_real != -np.inf:
             loglikelihood = np.log(np.sum(np.exp(bipart_bitarr_prob_real_vec - max_bipart_bitarr_prob_real))) + max_bipart_bitarr_prob_real
         else:
             loglikelihood = -np.inf
-        max_bipart_bitarr_prob = np.max(bipart_bitarr_prob.values())    
+        max_bipart_bitarr_prob = np.max(list(bipart_bitarr_prob.values()))
         if not grad:
             return loglikelihood
         
@@ -363,9 +357,9 @@ class SBN(object):
             node, split_bitarr = node_split_stack.pop()
             parent_clade_bitarr = bitarray(split_bitarr[self.ntaxa:])
             if node.is_root():
-                split_candidate, split_prob = zip(*self.rootsplit_CPDs.iteritems())
+                split_candidate, split_prob = zip(*self.rootsplit_CPDs.items())
             else:
-                split_candidate, split_prob = zip(*self.subsplit_CPDs(split_bitarr).iteritems())
+                split_candidate, split_prob = zip(*self.subsplit_CPDs(split_bitarr).items())
             
             split = np.random.choice(split_candidate, p=split_prob)                
             comp_split = (parent_clade_bitarr ^ bitarray(split)).to01()
@@ -441,13 +435,13 @@ class SBN_VI_EMP(SBN):
     EPS = 1e-100
     def __init__(self, taxa, emp_tree_freq, rootsplit_supp_dict, subsplit_supp_dict):
         super(SBN_VI_EMP, self).__init__(taxa, rootsplit_supp_dict, subsplit_supp_dict)
-        self.trees , self.emp_freqs = zip(*emp_tree_freq.iteritems())
+        self.trees , self.emp_freqs = zip(*emp_tree_freq.items())
         self.emp_freqs = np.array(self.emp_freqs)
         self.emp_tree_freq = emp_tree_freq
         self.negDataEnt = np.sum(self.emp_freqs * np.log(np.maximum(self.emp_freqs, self.EPS)))
         self._data_loglikelihood = defaultdict(lambda: -np.inf)
         
-        for tree, value in emp_tree_freq.iteritems():
+        for tree, value in emp_tree_freq.items():
             if value > 0.0:
                 self._data_loglikelihood[tree.get_topology_id()] = np.log(value)
         
@@ -457,7 +451,7 @@ class SBN_VI_EMP(SBN):
     # compute the KL divergence from SBN to the target empirical distribution.   
     def kl_div(self):
         kl_div = 0.0
-        for tree, wt in self.emp_tree_freq.iteritems():
+        for tree, wt in self.emp_tree_freq.items():
             kl_div += wt * np.log(max(np.exp(self.tree_loglikelihood(tree)), self.EPS))
         kl_div = self.negDataEnt - kl_div
         return kl_div
@@ -516,12 +510,12 @@ class SBN_VI_EMP(SBN):
             if it % test_freq == 0:
                 run_time += time.time()
                 test_kl_div.append(self.kl_div())
-                print 'Iter {} ({:.1f}s): Lower Bound {:.4f} | Loglikelihood {:.4f} | KL {:.6f}'.format(it, run_time, np.mean(lbs), np.max(lls), test_kl_div[-1])
+                print('Iter {} ({:.1f}s): Lower Bound {:.4f} | Loglikelihood {:.4f} | KL {:.6f}'.format(it, run_time, np.mean(lbs), np.max(lls), test_kl_div[-1]))
                 if it % lb_test_freq == 0:
                     run_time = -time.time()
                     test_lower_bound.append(self.lower_bound_estimate(n_particles, sample_sz=lb_test_sampsz)) 
                     run_time += time.time()  
-                    print '>>> Iter {} ({:.1f}s): Test Lower Bound {:.4f}'.format(it, run_time, test_lower_bound[-1])
+                    print('>>> Iter {} ({:.1f}s): Test Lower Bound {:.4f}'.format(it, run_time, test_lower_bound[-1]))
                                  
                 lbs, lls = [], []
                 run_time = -time.time()
@@ -588,12 +582,12 @@ class SBN_VI_EMP(SBN):
                 if tit % test_freq == 0:
                     run_time += time.time()
                     test_kl_div.append(self.kl_div())
-                    print 'Iter {} ({:.1f}s): Lower Bound {:.4f} | Loglikelihood {:.4f} | KL {:.6f}'.format(tit, run_time, np.mean(lbs), np.max(lls), test_kl_div[-1])
+                    print('Iter {} ({:.1f}s): Lower Bound {:.4f} | Loglikelihood {:.4f} | KL {:.6f}'.format(tit, run_time, np.mean(lbs), np.max(lls), test_kl_div[-1]))
                     if tit % lb_test_freq == 0:
                         run_time = -time.time()
                         test_lower_bound.append(self.lower_bound_estimate(n_particles, sample_sz=lb_test_sampsz)) 
                         run_time += time.time()  
-                        print '>>> Iter {} ({:.1f}s): Test Lower Bound {:.4f}'.format(tit, run_time, test_lower_bound[-1])
+                        print('>>> Iter {} ({:.1f}s): Test Lower Bound {:.4f}'.format(tit, run_time, test_lower_bound[-1]))
                                  
                     lbs, lls = [], []
                     run_time = -time.time()
@@ -643,12 +637,12 @@ class SBN_VI_EMP(SBN):
             if it % test_freq == 0:
                 run_time += time.time()
                 test_kl_div.append(self.kl_div())                   
-                print 'Iter {} ({:.1f}s): Lower Bound {:.4f} | Loglikelihood {:.4f} | KL {:.6f}'.format(it, run_time, np.mean(lbs), np.max(lls), test_kl_div[-1])
+                print('Iter {} ({:.1f}s): Lower Bound {:.4f} | Loglikelihood {:.4f} | KL {:.6f}'.format(it, run_time, np.mean(lbs), np.max(lls), test_kl_div[-1]))
                 if it % lb_test_freq == 0:
                     run_time = -time.time()
                     test_lower_bound.append(self.lower_bound_estimate(n_particles, sample_sz=lb_test_sampsz))
                     run_time += time.time()
-                    print '>>> Iter {} ({:.1f}s): Test Lower Bound {:.4f}'.format(it, run_time, test_lower_bound[-1])
+                    print('>>> Iter {} ({:.1f}s): Test Lower Bound {:.4f}'.format(it, run_time, test_lower_bound[-1]))
                     
                 lbs, lls = [], []
                 run_time = -time.time()

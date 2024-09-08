@@ -24,10 +24,10 @@ class SGD_Server(object):
         self.decay = decay
         self.eps = epsilon
         self.vars = dim_dict.keys()
-        self.mean_grad = {var: np.zeros(d) for var, d in dim_dict.iteritems()}
-        self.var_grad = {var: np.zeros(d) for var, d in dim_dict.iteritems()}
-        self.var_delta = {var: np.zeros(d) for var, d in dim_dict.iteritems()}
-        self.var_grad_max = {var: np.zeros(d) for var, d in dim_dict.iteritems()}
+        self.mean_grad = {var: np.zeros(d) for var, d in dim_dict.items()}
+        self.var_grad = {var: np.zeros(d) for var, d in dim_dict.items()}
+        self.var_delta = {var: np.zeros(d) for var, d in dim_dict.items()}
+        self.var_grad_max = {var: np.zeros(d) for var, d in dim_dict.items()}
         self.t = 0
         
     def sgd(self, stepsz_dict, param_dict, grad_dict):

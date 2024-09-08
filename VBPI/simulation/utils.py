@@ -1,7 +1,6 @@
 import numpy as np
 from Bio import Phylo
-from cStringIO import StringIO
-import phyloinfer as pinf
+from io import StringIO
 from ete3 import Tree
 from bitarray import bitarray
 from dendropy import TreeList
@@ -10,6 +9,19 @@ from collections import defaultdict
 EPS = 1e-100
 import pdb
 
+def mcmc_treeprob(filename, data_type):
+    mcmc_samp_tree_stats = Phylo.parse(filename, data_type)
+    mcmc_samp_tree_dict = {}
+    num_hp_tree = 0
+    for tree in mcmc_samp_tree_stats:
+        handle = StringIO()
+        Phylo.write(tree, handle, 'newick')
+        mcmc_samp_tree_dict[Tree(handle.getvalue().strip())] = tree.weight
+
+        handle.close()
+        num_hp_tree += 1
+
+    return mcmc_samp_tree_dict
 
 class BitArray(object):
     def __init__(self, taxa):
@@ -139,10 +151,10 @@ def upper_clip(z, ub):
 # generate full tree space    
 def generate(taxa):
     if len(taxa)==3:
-        return [pinf.Tree('('+','.join(taxa)+');')]
+        return [Tree('('+','.join(taxa)+');')]
     else:
         res = []
-        sister = pinf.Tree('('+taxa[-1]+');')
+        sister = Tree('('+taxa[-1]+');')
         for tree in generate(taxa[:-1]):
             for node in tree.traverse('preorder'):
                 if not node.is_root():
@@ -194,7 +206,7 @@ def summary(dataset, file_path, truncate=None):
     tree_wts_total = []
     n_samp_tree = 0
     for i in range(1,11):
-        tree_dict_rep, tree_name_rep, tree_wts_rep = pinf.result.mcmc_treeprob(file_path + dataset + '/rep_{}/'.format(i) + dataset + '.trprobs', 'nexus', truncate=truncate, taxon='keep')
+        tree_dict_rep, tree_name_rep, tree_wts_rep = mcmc_treeprob(file_path + dataset + '/rep_{}/'.format(i) + dataset + '.trprobs', 'nexus', truncate=truncate, taxon='keep')
         tree_wts_rep = np.round(np.array(tree_wts_rep)*750001)
  
         for j, name in enumerate(tree_name_rep):
