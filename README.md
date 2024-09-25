@@ -57,7 +57,7 @@ You can also use the "--empFreq" argument to moniter the KL divergence to the gr
 If you find this codebase useful, please consider citing our work:
 ```
 @article{xie2024improving,
-  title={mproving tree probability estimation with stochastic optimization and variance reduction},
+  title={Improving tree probability estimation with stochastic optimization and variance reduction},
   author={Xie, Tianyu and Yuan, Musu and Deng, Minghua and Zhang, Cheng},
   journal={Statistics and Computing},
   volume={34},
