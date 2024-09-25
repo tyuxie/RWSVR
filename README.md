@@ -3,7 +3,7 @@
 <div align="center">Tianyu Xie*, Musu Yuan*, Minghua Deng, Cheng Zhang</div>
 
 ## Installation
-This repository is a light CPU-based implementation of the paper titled "Improving Tree Probability Estimation with Stochastic Optimization and Variance Reduction".
+This repository is a light CPU-based implementation of the paper titled "Improving Tree Probability Estimation with Stochastic Optimization and Variance Reduction" ([Paper](https://link.springer.com/article/10.1007/s11222-024-10498-2)) ([Arxiv](https://arxiv.org/abs/2409.05282)).
 To create the python environment, use the following Anaconda command:
 ```
 conda env create -f environment.yml
@@ -23,7 +23,7 @@ Here, the "--method" argument can take string value in "EM, SEM, SEMVR, SGA, SVR
 **Real Data** You can use the following command to reproduce the experiments on real data (e.g., SEMVR on DS1, repo1):
 ```
 cd ./SBN/real-data
-python main.py --method SEMVR --dataset 1 --repo 1 --moniter
+python main.py --method SEMVR --dataset 1 --repo 1 --monitor
 ```
 Here, the "--method" argument can take string value in "EM, SEM, SEMVR, SGA, SVRG", the "--dataset" argument can take integer value from 1 to 8, and the "--repo" argument can take integer value from 1 to 10.
 Please pay attention to the learning rates for different methods when running the code, by specifying the "--ema_rate" for EM-based methods and "--lr" for gradient based methods.
@@ -34,7 +34,7 @@ Please pay attention to the learning rates for different methods when running th
 **Simulation** You can use the following command to reproduce the results of simulation studies on VBPI:
 ```
 cd ./VBPI/simulation
-python main.py --method rwsvr --nParticle 10
+python main.py --method rwsvr --nparticles 10
 ```
 Here, the "--method" argument can take string value in "vimco, rws, rwsvr". The "--nParticle" argument ($R$) can be alternatively specified, but a value of 10 is suggested.
 
@@ -55,3 +55,15 @@ You can also use the "--empFreq" argument to moniter the KL divergence to the gr
 --- 
 
 If you find this codebase useful, please consider citing our work:
+```
+@article{xie2024improving,
+  title={mproving tree probability estimation with stochastic optimization and variance reduction},
+  author={Xie, Tianyu and Yuan, Musu and Deng, Minghua and Zhang, Cheng},
+  journal={Statistics and Computing},
+  volume={34},
+  number={186},
+  pages={1--18},
+  year={2024},
+  publisher={Springer}
+}
+```
