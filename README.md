@@ -61,8 +61,8 @@ If you find this codebase useful, please consider citing our work:
   author={Xie, Tianyu and Yuan, Musu and Deng, Minghua and Zhang, Cheng},
   journal={Statistics and Computing},
   volume={34},
-  number={186},
-  pages={1--18},
+  number={6},
+  pages={186},
   year={2024},
   publisher={Springer}
 }
